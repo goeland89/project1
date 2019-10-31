@@ -5,9 +5,12 @@
 {% endblock %}
 
 {% block body %}
-    <form action="{{ url_for('hello') }}" method="post">
-        <p>Name: <input type="text" name="name" placeholder="Enter Your Name: "></p>
-        <p>Password: <input type="password" name="password" value="Enter your password"></p>
+  {% if user_session %}
+    <form action="" method="post">
+        <p>Name: <input type="text" name="name" placeholder="Enter Your Name: " required autofocus></p>
+        <p>Password: <input type="password" name="password" placeholder="Enter your password" required></p>
+        <p><h2>{{user_error}}</h2></p>
         <button>Register</button>
     </form>
+  {% endif %}
 {% endblock %}

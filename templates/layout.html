@@ -4,6 +4,10 @@
         <title>My Books app</title>
     </head>
     <body>
+      <a href="{{ url_for('index') }}">Home</a>
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('registration') }}">New user?</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
         <h1>{% block heading %}{% endblock %}
 
         {% block body %}
