@@ -5,36 +5,59 @@
 {% endblock %}
 
 {% block body %}
-  <table>
-    <tr>
-      <th>ISBN number</th>
-      <th>Title</th>
-      <th>Author</th>
-      <th>Year</th>
-    </tr>
-    {% for book in books %}
+  {% if show %}
+    <table>
       <tr>
-        <td>{{book[0]}}</td>
-        <td>{{book[1]}}</td>
-        <td>{{book[2]}}</td>
-        <td>{{book[3]}}</td>
+        <th>ISBN number</th>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Year</th>
       </tr>
-    {% endfor %}
-  </table>
-  <br>
-  Reviews:
-  <table>
-    <tr>
-      <th>Name</th>
-      <th>Review</th>
-      <th>Rating</th>
-    </tr>
-    {% for review in reviews %}
-      <tr>
-        <td>{{review[1]}}</td>
-        <td>{{review[2]}}</td>
-        <td>{{review[3]}}</td>
-      </tr>
-    {% endfor %}
-  </table>
+      {% for book in books %}
+        <tr>
+          <td>{{book[0]}}</td>
+          <td>{{book[1]}}</td>
+          <td>{{book[2]}}</td>
+          <td>{{book[3]}}</td>
+        </tr>
+      {% endfor %}
+    </table>
+    <br>
+    <h2>Goodread rating:</h2>
+    <ul>
+      <li>{{ goodread_avg_rating }}</li>
+      <li>{{ goodread_rating_count }}</li>
+    </ul>
+    <br>
+    {% if show_review %}
+      <h2>Reviews:</h2>
+      <table>
+        <tr>
+          <th>Name</th>
+          <th>Review</th>
+          <th>Rating</th>
+        </tr>
+        {% for review in reviews %}
+          <tr>
+            <td>{{review[2]}}</td>
+            <td>{{review[3]}}</td>
+            <td>{{review[4]}}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <h2>No review submitted yet.</h2>
+    {% endif %}
+    <br>
+    <p><h1>Review the book:</h1></p>
+    <form action="" method="post">
+      <fieldset>
+        <legend>Submit your review:</legend>
+        <p>Your rating: <input type="number" name="rating" placeholder="5" min="1" max="5" required autofocus></p>
+        <p>Your review: <input type="text" name="review" placeholder="Enter your review" required size="100"></p>
+        <button>Submit</button>
+        <p>{{ warning_review }}</p>
+      </fieldset>
+    </form>
+  {% endif %}
 {% endblock %}

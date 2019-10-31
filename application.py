@@ -1,5 +1,6 @@
 import os
-
+import requests
+import json
 from flask import Flask, session, render_template, request, redirect
 from flask_session import Session
 from sqlalchemy import create_engine
@@ -33,13 +34,13 @@ def registration():
     user_session = (session.get("users") == [])
     if user_session:
         if request.method == "POST":
-            nbofusers = db.execute('SELECT "Name" FROM "USERS" WHERE "Name"=:name', {"name": name}).rowcount
+            nbofusers = db.execute('SELECT "Name" FROM "users" WHERE "Name"=:name', {"name": name}).rowcount
             if nbofusers == 0:
                 password = request.form.get("password")
-                db.execute('INSERT INTO "USERS" ("Name", "Password") values (:name, :password)', {"name": name, "password": password})
+                db.execute('INSERT INTO "users" ("Name", "Password") values (:name, :password)', {"name": name, "password": password})
                 db.commit()
                 session["users"].append(name)
-                return redirect("/")
+                return redirect("/search")
             else:
                 user_error = "Name already used. Please select another name."
     else:
@@ -55,7 +56,7 @@ def login():
     user_session = (session.get("users") == [])
     if user_session:
         if request.method == "POST":
-            nbofusers = db.execute('SELECT "Name" FROM "USERS" WHERE "Name"=:name AND "Password"=:password', {"name": name, "password": password}).rowcount
+            nbofusers = db.execute('SELECT "Name" FROM "users" WHERE "Name"=:name AND "Password"=:password', {"name": name, "password": password}).rowcount
             if nbofusers == 0:
                 user_error = "Login error. Please log in again."
             else:
@@ -103,7 +104,7 @@ def search():
             if ISBN_number == "" and title == "" and author == "" and year == "":
                 search_error = "At least 1 criterion must be filled"
             else:
-                books = db.execute('SELECT * FROM "BOOKS" WHERE \
+                books = db.execute('SELECT * FROM "books" WHERE \
                     "author" LIKE :author AND \
                     "title" LIKE :title AND \
                     "isbn" LIKE :ISBN_number AND \
@@ -115,26 +116,58 @@ def search():
 
 @app.route("/book")
 def books():
+    books = {}
+    reviews = {}
+    show = False
+    show_review = False
     if session.get("users") == []:
         headline = "You are not connected"
     else:
         headline = "Please go to the search page."
-    return render_template("book.html", headline=headline)
+    return render_template("book.html", headline=headline, books=books, reviews=reviews, show=show, show_review=show_review)
 
-@app.route("/book/<string:isbn>")
+@app.route("/book/<string:isbn>", methods=["POST", "GET"])
 def book(isbn):
-#display the average rating and number of ratings on goodread
-#user should be able to submit its own review including a rating from 1 to 5 and a comment
-#only 1 review per user
+    rating = request.form.get("rating")
+    review = request.form.get("review")
     books = {}
     reviews = {}
+    show = True
+    show_review = False
+    goodread_avg_rating = 0.0
+    goodread_rating_count = 0
+    try:
+        name = session.get("users")[0]
+    except IndexError:
+        pass
+    warning_review = ""
     if session.get("users") == []:
         headline = "You are not connected. Please login or register."
+        show = False
     else:
+        review_count = db.execute('SELECT * FROM "reviews" WHERE "isbn"= :ISBN_number AND "Name"= :name', {"ISBN_number": isbn, "name": name}).rowcount
+        if review_count == 1:
+            warning_review = "You have already submitted a review. If you submit again, it will replace your preview review."
+        if request.method == "POST":
+            if review_count == 0:
+                db.execute('INSERT INTO "reviews" ("isbn", "Name", "Review", "Rating") \
+                values (:isbn, :name, :Review, :Rating)', \
+                {"isbn": isbn, "name": name, "Review": review, "Rating": rating})
+                db.commit()
+            else:
+                db.execute('UPDATE "reviews" \
+                            SET "Review"= :review, "Rating"= :rating \
+                            WHERE "isbn"= :isbn AND "Name"= :name', \
+                            {"review": review, "rating": rating, "isbn": isbn, "name": name})
+                db.commit()
         headline = "Review of the book selected:"
-        books = db.execute('SELECT * FROM "BOOKS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
-        reviews = db.execute('SELECT * FROM "REVIEWS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
-    return render_template("book.html", headline=headline, books=books, reviews=reviews)
+        books = db.execute('SELECT * FROM "books" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+        reviews = db.execute('SELECT * FROM "reviews" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+        goodread = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "mihosn08BKf9oblUkFtoxA", "isbns": isbn}).json()
+        goodread_avg_rating = goodread["books"][0]["average_rating"]
+        goodread_rating_count = goodread["books"][0]["work_ratings_count"]
+        show_review = (len(reviews) > 0)
+    return render_template("book.html", headline=headline, books=books, reviews=reviews, show=show, show_review=show_review, warning_review=warning_review, goodread_avg_rating=goodread_avg_rating, goodread_rating_count=goodread_rating_count)
 
 @app.route("/api/<string:isbn>")
 def api(isbn):
@@ -143,17 +176,24 @@ def api(isbn):
     review_count = 0
     average_score = 0.0
     connected = True
+    response = {}
     if session.get("users") == []:
         connected = False
     else:
         headline = ""
-        books = db.execute('SELECT * FROM "BOOKS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+        books = db.execute('SELECT * FROM "books" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
         if len(books) == 0:
             return render_template("404.html")
         else:
-            reviews = db.execute('SELECT * FROM "REVIEWS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+            reviews = db.execute('SELECT * FROM "reviews" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
             review_count = len(reviews)
             for review in reviews:
-                average_score += review[3]
+                average_score += review[4]
             average_score = average_score / review_count
-    return render_template("api.html", connected=connected, review_count=review_count, average_score=average_score, books=books)
+            response["title"] = books[0][1]
+            response["author"] = books[0][2]
+            response["year"] = books[0][3]
+            response["isbn"] = books[0][0]
+            response["review_count"] = review_count
+            response["average_score"] = average_score
+    return json.dumps(response)

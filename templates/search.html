@@ -28,10 +28,10 @@
         </tr>
         {% for book in books %}
         <tr>
-          <td><a href="{{ url_for('book', isbn=book.isbn) }}">{{book[0]}}</a></td>
-          <td><a href="{{ url_for('book') }}">{{book[1]}}</a></td>
-          <td><a href="{{ url_for('book') }}">{{book[2]}}</a></td>
-          <td><a href="{{ url_for('book') }}">{{book[3]}}</a></td>
+          <td><a href="{{ url_for('book', isbn=book[0]) }}">{{book[0]}}</a></td>
+          <td><a href="{{ url_for('book', isbn=book[0]) }}">{{book[1]}}</a></td>
+          <td><a href="{{ url_for('book', isbn=book[0]) }}">{{book[2]}}</a></td>
+          <td><a href="{{ url_for('book', isbn=book[0]) }}">{{book[3]}}</a></td>
         </tr>
         {% endfor %}
       </table>
