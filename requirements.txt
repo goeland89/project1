@@ -1,1 +1,4 @@
-C:\Users\rober\Downloads\psycopg2-2.8.3-cp38-cp38-win_amd64.whl
+Flask
+Flask-Session
+psycopg2-binary
+SQLAlchemy

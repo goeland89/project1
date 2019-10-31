@@ -27,7 +27,7 @@ def index():
 
 @app.route("/registration", methods=["POST", "GET"])
 def registration():
-    headline = "Welcome to My Books application. Please register:"
+    headline = "Welcome to My Books application."
     name = request.form.get("name")
     user_error = ""
     user_session = (session.get("users") == [])
@@ -63,7 +63,7 @@ def login():
                     session["users"] = []
                 if request.method == "POST":
                     session["users"].append(name)
-                return redirect("/")
+                return redirect("/search")
     else:
         headline = "You are already logged in"
     return render_template("login.html", headline=headline, user_error=user_error, user_session=user_session)
@@ -81,3 +81,79 @@ def logout():
         headline = "You are not connected."
         connected = False
     return render_template("logout.html", headline=headline, connected=connected)
+
+@app.route("/search", methods=["POST", "GET"])
+def search():
+#search for a book according to name, author, year or ISBN
+#partial search accepted
+    connected = False
+    results = False
+    ISBN_number = request.form.get("ISBN_number")
+    title = request.form.get("title")
+    author = request.form.get("author")
+    year = request.form.get("year")
+    search_error = ""
+    books={}
+    if session.get("users") == []:
+        headline = "You are not connected"
+    else:
+        connected = True
+        headline = "You can search for books:"
+        if request.method == "POST":
+            if ISBN_number == "" and title == "" and author == "" and year == "":
+                search_error = "At least 1 criterion must be filled"
+            else:
+                books = db.execute('SELECT * FROM "BOOKS" WHERE \
+                    "author" LIKE :author AND \
+                    "title" LIKE :title AND \
+                    "isbn" LIKE :ISBN_number AND \
+                    "year"  LIKE :year', \
+                    {"author": "%"+author+"%", "title": "%"+title+"%", "ISBN_number": "%"+ISBN_number+"%", "year": "%"+year+"%"}).fetchall()
+                if len(books) >0:
+                    results = True
+    return render_template("search.html", headline=headline, connected=connected, search_error=search_error, books=books, results=results)
+
+@app.route("/book")
+def books():
+    if session.get("users") == []:
+        headline = "You are not connected"
+    else:
+        headline = "Please go to the search page."
+    return render_template("book.html", headline=headline)
+
+@app.route("/book/<string:isbn>")
+def book(isbn):
+#display the average rating and number of ratings on goodread
+#user should be able to submit its own review including a rating from 1 to 5 and a comment
+#only 1 review per user
+    books = {}
+    reviews = {}
+    if session.get("users") == []:
+        headline = "You are not connected. Please login or register."
+    else:
+        headline = "Review of the book selected:"
+        books = db.execute('SELECT * FROM "BOOKS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+        reviews = db.execute('SELECT * FROM "REVIEWS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+    return render_template("book.html", headline=headline, books=books, reviews=reviews)
+
+@app.route("/api/<string:isbn>")
+def api(isbn):
+    books = {}
+    reviews = {}
+    review_count = 0
+    average_score = 0.0
+    connected = True
+    if session.get("users") == []:
+        connected = False
+    else:
+        headline = ""
+        books = db.execute('SELECT * FROM "BOOKS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+        if len(books) == 0:
+            return render_template("404.html")
+        else:
+            reviews = db.execute('SELECT * FROM "REVIEWS" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
+            review_count = len(reviews)
+            for review in reviews:
+                average_score += review[3]
+            average_score = average_score / review_count
+    return render_template("api.html", connected=connected, review_count=review_count, average_score=average_score, books=books)

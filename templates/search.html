@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block heading %}
+    <h1>{{ headline }}</h1>
+{% endblock %}
+
+{% block body %}
+  {% if connected %}
+    <fieldset>
+      <legend>Search criteria:</legend>
+      <form action="" method="post">
+        <p>ISBN number: <input type="text" name="ISBN_number" placeholder="Enter ISBN number" autofocus></p>
+        <p>Title: <input type="text" name="title" placeholder="Enter book title"></p>
+        <p>Author: <input type="text" name="author" placeholder="Enter author name"></p>
+        <p>Publishing year: <input type="text" name="year" placeholder="Enter publishing year"></p>
+        <p><h2>{{search_error}}</h2></p>
+        <button>Search</button>
+      </form>
+    </fieldset>
+    <p></p>
+    {% if results %}
+      <table>
+        <tr>
+          <th>ISBN number</th>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Year</th>
+        </tr>
+        {% for book in books %}
+        <tr>
+          <td><a href="{{ url_for('book', isbn=book.isbn) }}">{{book[0]}}</a></td>
+          <td><a href="{{ url_for('book') }}">{{book[1]}}</a></td>
+          <td><a href="{{ url_for('book') }}">{{book[2]}}</a></td>
+          <td><a href="{{ url_for('book') }}">{{book[3]}}</a></td>
+        </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <h2>No result. Please change your search criteria</h2>
+    {% endif %}
+  {% else %}
+    Please <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('registration') }}">register</a>
+  {% endif %}
+{% endblock %}

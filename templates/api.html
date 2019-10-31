@@ -1,0 +1,14 @@
+{% if connected %}
+  {% block body %}
+    {<br>
+      "title": "{{books[0][1]}}",<br>
+      "author": "{{books[0][2]}}",<br>
+      "year": {{books[0][3]}},<br>
+      "isbn": "{{books[0][0]}}",<br>
+      "review_count": {{review_count}},<br>
+      "average_score": {{average_score}}<br>
+    }<br>
+  {% endblock %}
+{% else %}
+  <h1>Not connected. Please <a href="{{ url_for('login') }}">Login</a> or <a href="{{ url_for('registration') }}">register.</a>
+{% endif %}

@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block heading %}
+    <h1>{{ headline }}</h1>
+{% endblock %}
+
+{% block body %}
+  <table>
+    <tr>
+      <th>ISBN number</th>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Year</th>
+    </tr>
+    {% for book in books %}
+      <tr>
+        <td>{{book[0]}}</td>
+        <td>{{book[1]}}</td>
+        <td>{{book[2]}}</td>
+        <td>{{book[3]}}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <br>
+  Reviews:
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>Review</th>
+      <th>Rating</th>
+    </tr>
+    {% for review in reviews %}
+      <tr>
+        <td>{{review[1]}}</td>
+        <td>{{review[2]}}</td>
+        <td>{{review[3]}}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}
