@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-from flask import Flask, session, render_template, request, redirect
+from flask import Flask, session, render_template, request, redirect, jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -176,24 +176,24 @@ def api(isbn):
     review_count = 0
     average_score = 0.0
     connected = True
-    response = {}
     if session.get("users") == []:
         connected = False
     else:
         headline = ""
         books = db.execute('SELECT * FROM "books" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
         if len(books) == 0:
-            return render_template("404.html")
+            return jsonify({"error": "Invalid ISBN number"}), 404
         else:
             reviews = db.execute('SELECT * FROM "reviews" WHERE "isbn"= :ISBN_number', {"ISBN_number": isbn}).fetchall()
             review_count = len(reviews)
             for review in reviews:
                 average_score += review[4]
             average_score = average_score / review_count
-            response["title"] = books[0][1]
-            response["author"] = books[0][2]
-            response["year"] = books[0][3]
-            response["isbn"] = books[0][0]
-            response["review_count"] = review_count
-            response["average_score"] = average_score
-    return json.dumps(response)
+    return jsonify({
+                "title": books[0][1],
+                "author": books[0][2],
+                "year": books[0][3],
+                "isbn": books[0][0],
+                "review_count": review_count,
+                "average_score": average_score
+            })
